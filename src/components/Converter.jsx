@@ -14,11 +14,23 @@ function Converter()
 	const rates = useSelector((state) => state.exchange.exchangeRates);
 	const status = useSelector((state) => state.exchange.status);
 	const error = useSelector((state) => state.exchange.error);
+	const lastUpdated = useSelector((state) => state.exchange.lastUpdatedTime);
 
 	const [uahAmount, setUahAmount] = useState("100");
 	const [selectedCurrencies, setSelectedCurrencies] = useState(["USD"]);
+	
+	useEffect
+	(
+		() =>
+		{
+			dispatch(exchangeAsyncThunk("UAH"));
 
-	useEffect(() => { dispatch(exchangeAsyncThunk("UAH")); }, [dispatch]);
+			const intervalId = setInterval(() => { dispatch(exchangeAsyncThunk("UAH")); }, 60 * 1000);
+
+			return () => { clearInterval(intervalId); };
+		},
+		[dispatch]
+	);
 
 	const amount = useMemo
 	(
@@ -94,6 +106,7 @@ function Converter()
 	return (
 		<section className="currency_converter-section">
 			<h2>Currency Converter (to UAH)</h2>
+			{lastUpdated && <p className="last-updated">Last updated: {Date(lastUpdated).toLocaleString()}</p>}
 
 			<div>
 				<label htmlFor="uah-input">Amount in UAH:</label>

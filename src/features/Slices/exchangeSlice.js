@@ -6,7 +6,8 @@ const initialState =
 {
 	exchangeRates: {},
 	status: 'idle',
-	error: null
+	error: null,
+	lastUpdatedTime: null
 };
 
 const exchangeSlice = createSlice
@@ -34,6 +35,7 @@ const exchangeSlice = createSlice
 					{
 						state.status = 'succeeded';
 						if (action.payload && action.payload.conversion_rates) { state.exchangeRates = action.payload.conversion_rates; }
+						state.lastUpdatedTime = new Date().toISOString();
 					}
 				)
 				.addCase
