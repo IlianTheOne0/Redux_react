@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import exchangeAsyncThunk from "../features/AsyncThunks/exchangeAsyncThunk";
+import { addConversionToHistory } from "../features/Slices/historySlice";
 
 import "../styles/Converter.css";
 
@@ -15,10 +16,54 @@ function Converter()
 	const status = useSelector((state) => state.exchange.status);
 	const error = useSelector((state) => state.exchange.error);
 	const lastUpdated = useSelector((state) => state.exchange.lastUpdatedTime);
-
+	const history = useSelector((state) => state.history.history);
+	
 	const [uahAmount, setUahAmount] = useState("100");
 	const [selectedCurrencies, setSelectedCurrencies] = useState(["USD"]);
-	
+
+	const amount = useMemo
+	(
+		() =>
+		{
+			const parsed = parseFloat(uahAmount);
+			return isNaN(parsed) || parsed < 0 ? 0 : parsed;
+		},
+		[uahAmount]
+	);
+
+	useEffect
+	(
+		() =>
+		{
+			if (status === "succeeded" && amount > 0 && selectedCurrencies.length > 0)
+			{
+				selectedCurrencies.forEach
+				(
+					currency =>
+					{
+						const rate = rates[currency];
+						if (!rate) { return; }
+
+						const calculatedResult = (amount * rate).toFixed(4);
+
+						const newConversion =
+						{
+							fromAmount: parseFloat(uahAmount),
+							fromCurrency: "UAH",
+							toAmount: parseFloat(calculatedResult),
+							toCurrency: currency,
+							rate: rate.toFixed(6),
+							timestamp: new Date().toISOString()
+						};
+
+						dispatch(addConversionToHistory(newConversion));
+					}
+				)
+			}
+		},
+		[selectedCurrencies, uahAmount]
+	);
+
 	useEffect
 	(
 		() =>
@@ -31,16 +76,6 @@ function Converter()
 		},
 		[dispatch]
 	);
-
-	const amount = useMemo
-	(
-		() =>
-		{
-			const parsed = parseFloat(uahAmount);
-			return isNaN(parsed) || parsed < 0 ? 0 : parsed;
-		},
-		[uahAmount]
-	)
 
 	const handleAmountChange = (event) => { setUahAmount(event.target.value); };
 	const handleCurrencyChange = (event) =>
@@ -103,6 +138,34 @@ function Converter()
 		default: { content = null; }
 	}
 
+	const historyItems = 
+	(
+		<div className="history-list">
+			<h3>Conversion History (last 5)</h3>
+			{
+				history.length === 0 ? 
+				<p>No conversion history yet</p>
+				:
+				<ul>
+					{
+						history.map
+						(
+							item =>
+							{
+								const date = new Date(item.timestamp);
+								return (
+									<li key={item.id}>
+										{item.fromAmount} {item.fromCurrency} =&gt; {item.toAmount} {item.toCurrency} | Rate: {item.rate} | {date.toLocaleString()}
+									</li>
+								);
+							}
+						)
+					}
+				</ul>
+		}
+		</div>
+	)
+
 	return (
 		<section className="currency_converter-section">
 			<h2>Currency Converter (to UAH)</h2>
@@ -134,6 +197,10 @@ function Converter()
 			</div>
 
 			{content}
+
+			<hr className="divider"/>
+
+			{historyItems}
 		</section>
 	);
 }
