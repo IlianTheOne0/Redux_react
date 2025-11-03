@@ -23,7 +23,7 @@
 	font-weight: bold;
 }
 
-.currency_converter-section input
+.currency_converter-section input:not([type="checkbox"])
 {
 	width: 200px;
 	
@@ -33,19 +33,46 @@
 	border-radius: 4px;
 }
 
-.currency_converter-section select
+.currency_converter-section .currency-selection
 {
-	width: 220px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.currency_converter-section .currency-selection .checkbox-group
+{
+	max-height: 150px;
 	
-	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	
+	padding: 5px;
+	
+	background-color: #fff;
 	
 	border: 1px solid #ccc;
 	border-radius: 4px;
+	
+	overflow-y: auto;
 }
 
-.currency_converter-section .conversion-result
+.currency_converter-section .currency-selection .checkbox-group .checkbox-item
+{
+	margin: 3px 15px;
+}
+
+.currency_converter-section .currency-selection .checkbox-group .checkbox-item label
+{
+	margin-left: 10px;
+}
+
+.currency_converter-section .conversion-results
 {
 	margin-top: 10px;
 
-	text-align: center;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 10px;
 }

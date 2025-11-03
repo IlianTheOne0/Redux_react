@@ -16,28 +16,35 @@ function Converter()
 	const error = useSelector((state) => state.exchange.error);
 
 	const [uahAmount, setUahAmount] = useState("100");
-	const [selectedCurrency, setSelectedCurrency] = useState("USD");
+	const [selectedCurrencies, setSelectedCurrencies] = useState(["USD"]);
 
 	useEffect(() => { dispatch(exchangeAsyncThunk("UAH")); }, [dispatch]);
 
-	const calculatedResult = useMemo
+	const amount = useMemo
 	(
 		() =>
 		{
-			if (status !== "succeeded" || !rates) { return null; }
-
-			const amount = parseFloat(uahAmount) || 0;
-			if (amount <= 0) { return 0; }
-
-			const rate = rates[selectedCurrency];
-			if (!rate) { return null; }
-			return (amount * rate).toFixed(4);
+			const parsed = parseFloat(uahAmount);
+			return isNaN(parsed) || parsed < 0 ? 0 : parsed;
 		},
-		[uahAmount, rates, status, selectedCurrency]
-	);
+		[uahAmount]
+	)
 
 	const handleAmountChange = (event) => { setUahAmount(event.target.value); };
-	const handleCurrencyChange = (event) => { setSelectedCurrency(event.target.value); };
+	const handleCurrencyChange = (event) =>
+	{
+		const currency = event.target.value;
+		const isChecked = event.target.checked;
+
+		setSelectedCurrencies
+		(
+			previous =>
+			{
+				if (isChecked) { return [...previous, currency]; }
+				else { return previous.filter(item => item !== currency); }
+			}
+		);
+	};
 
 	let content;
 	switch (status)
@@ -46,19 +53,42 @@ function Converter()
 		case "failed": { content = <p>Error: {error}</p>; } break;
 		case "succeeded":
 		{
-			const currentRate = rates[selectedCurrency];
-
 			const displayAmount = uahAmount === "" ? "0" : uahAmount;
-
-			content =
+			
+			const results = selectedCurrencies.map
 			(
-				<div className="conversion-result">
-					<p>Amount in UAH: {displayAmount}</p>
-					<p>Converted amount: {calculatedResult || "0"} {selectedCurrency}</p>
-					<p>1 UAH = {currentRate.toFixed(6)} {selectedCurrency}</p>
-				</div>
-			)
-		}
+				currency =>
+				{
+					const rate = rates[currency];
+					let calculatedResult = null;
+					if (rate && amount > 0) { calculatedResult = (amount * rate).toFixed(4); }
+
+					const convertedDisplay = calculatedResult || "0";
+					const currentRateDisplay = rate ? rate.toFixed(6) : "N/A";
+
+					return (
+						<div key={currency}>
+							<p>1 UAH = {currentRateDisplay} {currency}</p>
+							<p>{displayAmount} UAH = {convertedDisplay} {currency}</p>
+						</div>
+					);
+				}
+			);
+
+			if (selectedCurrencies.length === 0) { content = <p>Please select at least one currency</p>; }
+			else
+			{
+				content =
+				(
+					<div className="conversion-results">
+						<h3>Conversion Results</h3>
+						<p>Amount in UAH: {displayAmount}</p>
+						{results}
+					</div>
+				)
+			}
+		} break;
+		default: { content = null; }
 	}
 
 	return (
@@ -71,18 +101,23 @@ function Converter()
 				<input id="uah-input" type="number" value={uahAmount} onChange={handleAmountChange} placeholder="Enter the amount"/>
 			</div>
 
-			<div>
-				<label htmlFor="currency-select">Select currency:</label>
-				{"    "}
-				<select id="currency-select" value={selectedCurrency} onChange={handleCurrencyChange} disabled={status !== "succeeded"}>
-					<option value="" disabled hidden>{status === "loading" ? "Loading..." : "Select a currency"}</option>
+			<div className="currency-selection">
+				<p>Select currencies:</p>
+				<div className="checkbox-group">
 					{
 						currencies.map
 						(
-							currency =>(<option key={currency} value={currency}>{currency}</option>)
+							currency =>
+							(
+								<span key={currency} className="checkbox-item">
+									<input id={`currency-${currency}`} type="checkbox" value={currency} checked={selectedCurrencies.includes(currency)} onChange={handleCurrencyChange}/>
+									<label htmlFor={`currency-${currency}`}>{currency}</label>
+									{"    "}
+								</span>
+							)
 						)
 					}
-				</select>
+				</div>
 			</div>
 
 			{content}
