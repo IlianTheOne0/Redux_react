@@ -97,7 +97,16 @@ function Converter()
 	switch (status)
 	{
 		case "loading": { content = <p>Loading exchange rates...</p>; } break;
-		case "failed": { content = <p>Error: {error}</p>; } break;
+		case "failed":
+		{
+			content = (
+				<div className="error-div">
+					<p>Error: {error}</p>
+					<p>Please try again</p>
+					<button className="retry-button" onClick={() => dispatch(exchangeAsyncThunk("UAH"))}>Retry</button>
+				</div>
+			);
+		} break;
 		case "succeeded":
 		{
 			const displayAmount = uahAmount === "" ? "0" : uahAmount;
